@@ -22,7 +22,6 @@ module.exports = function (app) {
       read: { type: Boolean, required: false },
       sent: { type: Date, required: false },
 
-
       createdBy: {
         type: Schema.Types.ObjectId,
         ref: "users",
@@ -38,7 +37,6 @@ module.exports = function (app) {
       timestamps: true,
     },
   );
-
 
   if (mongooseClient.modelNames().includes(modelName)) {
     mongooseClient.deleteModel(modelName);

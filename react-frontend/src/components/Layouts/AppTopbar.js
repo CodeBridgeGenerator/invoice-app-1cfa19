@@ -21,12 +21,12 @@ const AppTopbar = (props) => {
   const [userItems, setUserItems] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
 
-   // Function to initialize cache structure based on profiles and selectedUser
-   const initializeCacheStructure = async () => {
+  // Function to initialize cache structure based on profiles and selectedUser
+  const initializeCacheStructure = async () => {
     try {
       const response = await props.getCache();
       const currentCache = response.results;
-      
+
       // Fetch profiles data from profile service
       const profilesResponse = await client.service("profiles").find({
         query: {
@@ -38,7 +38,7 @@ const AppTopbar = (props) => {
 
       // Build the default cache structure dynamically based on profiles
       const defaultCacheStructure = {
-        profiles: profilesData.map(profile => ({
+        profiles: profilesData.map((profile) => ({
           profileId: profile._id,
           role: profile.position?.roleId || "Unknown Role",
           preferences: {
@@ -53,15 +53,17 @@ const AppTopbar = (props) => {
               },
             ],
             settings: {},
-          }
+          },
         })),
-        selectedUser: selectedUser || profilesData[0]?._id // Set first profile as selected by default
+        selectedUser: selectedUser || profilesData[0]?._id, // Set first profile as selected by default
       };
 
       // Set the cache if it doesn't exist or is missing required fields
       if (!currentCache || !currentCache.profiles) {
         await props.setCache(defaultCacheStructure);
-        console.log("Cache initialized with profile-specific preferences and selected user");
+        console.log(
+          "Cache initialized with profile-specific preferences and selected user",
+        );
       }
     } catch (error) {
       console.error("Error initializing cache structure:", error);
@@ -70,7 +72,7 @@ const AppTopbar = (props) => {
 
   useEffect(() => {
     initializeCacheStructure();
-  }, []); 
+  }, []);
 
   // Handle user patched event only once
   useEffect(() => {
@@ -166,23 +168,22 @@ const AppTopbar = (props) => {
       status: "success",
     }));
     setUserItems(formattedUserItems);
-  
+
     // Set only if not already selected
     if (!selectedUser && formattedUserItems[0]) {
       setSelectedUser(formattedUserItems[0].id);
     }
   }, [profiles, roleNames]);
-  
 
   useEffect(() => {
     const updateSelectedUserInCache = async () => {
       try {
         const currentCache = await props.getCache();
-  
+
         if (currentCache && currentCache.selectedUser !== selectedUser) {
           // Merge the existing cache with the new selectedUser field
           const updatedCache = { ...currentCache, selectedUser };
-          
+
           await props.setCache(updatedCache);
           console.log("Cache updated with new selected user:", selectedUser);
         }
@@ -190,11 +191,9 @@ const AppTopbar = (props) => {
         console.error("Error updating cache with selected user:", error);
       }
     };
-  
+
     if (selectedUser) updateSelectedUserInCache();
   }, [selectedUser, props]);
-  
-
 
   const handleUserChange = (e) => {
     const userId = e.target.value;
@@ -253,15 +252,14 @@ const AppTopbar = (props) => {
               checked={selectedUser === user.id}
               onChange={(e) => handleUserChange(e.value)}
             /> */}
-           <input
-  type="radio"
-  id={user.id}
-  name="userRadio"
-  value={user.id}
-  checked={selectedUser === user.id}
-  onChange={(e) => handleUserChange(e)}
-/>
-
+            <input
+              type="radio"
+              id={user.id}
+              name="userRadio"
+              value={user.id}
+              checked={selectedUser === user.id}
+              onChange={(e) => handleUserChange(e)}
+            />
           </div>
         </div>
       ),

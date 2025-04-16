@@ -1,9 +1,9 @@
 const {
-    AuthenticationService,
-    JWTStrategy
-} = require('@feathersjs/authentication');
-const { LocalStrategy } = require('@feathersjs/authentication-local');
-const { expressOauth } = require('@feathersjs/authentication-oauth');
+  AuthenticationService,
+  JWTStrategy,
+} = require("@feathersjs/authentication");
+const { LocalStrategy } = require("@feathersjs/authentication-local");
+const { expressOauth } = require("@feathersjs/authentication-oauth");
 // const { OAuthStrategy } = require('@feathersjs/authentication-oauth');
 
 // class GoogleStrategy extends OAuthStrategy {
@@ -21,12 +21,12 @@ const { expressOauth } = require('@feathersjs/authentication-oauth');
 // }
 
 module.exports = (app) => {
-    const authentication = new AuthenticationService(app);
+  const authentication = new AuthenticationService(app);
 
-    authentication.register('jwt', new JWTStrategy());
-    authentication.register('local', new LocalStrategy());
-    //authentication.register('google', new GoogleStrategy());
+  authentication.register("jwt", new JWTStrategy());
+  authentication.register("local", new LocalStrategy());
+  //authentication.register('google', new GoogleStrategy());
 
-    app.use('/authentication', authentication);
-    app.configure(expressOauth());
+  app.use("/authentication", authentication);
+  app.configure(expressOauth());
 };

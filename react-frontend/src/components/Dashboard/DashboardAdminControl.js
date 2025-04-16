@@ -101,78 +101,78 @@ export const AdminControl = (props) => {
 
   return (
     <ProjectLayout>
-    <div className="p-2 md:p-4">
-      {/* Title and Edit section */}
-      <div className="mb-2 flex justify-content-between align-items-center">
-        <TitleDash user={props.user} />
-        <EditDashComp isEdit={isEdit} setIsEdit={setIsEdit} />
-      </div>
+      <div className="p-2 md:p-4">
+        {/* Title and Edit section */}
+        <div className="mb-2 flex justify-content-between align-items-center">
+          <TitleDash user={props.user} />
+          <EditDashComp isEdit={isEdit} setIsEdit={setIsEdit} />
+        </div>
 
-      <div className="surface-border border-round surface-card">
-        <div className="grid">
-          {/* Recent Component */}
-          <div className="col-12 md:col-4 mb-3">
-            <RecentComp
-              title={"Recent"}
-              isEdit={isEdit}
-              recentItems={recentItems}
-            />
-          </div>
+        <div className="surface-border border-round surface-card">
+          <div className="grid">
+            {/* Recent Component */}
+            <div className="col-12 md:col-4 mb-3">
+              <RecentComp
+                title={"Recent"}
+                isEdit={isEdit}
+                recentItems={recentItems}
+              />
+            </div>
 
-          {/* Pinned Items Component */}
-          <div className="col-12 md:col-4 mb-3">
-            <PinnedItems
-              Pinned={"Pinned Items"}
-              isEdit={isEdit}
-              pinnedItems={pinnedItems}
-            />
-          </div>
+            {/* Pinned Items Component */}
+            <div className="col-12 md:col-4 mb-3">
+              <PinnedItems
+                Pinned={"Pinned Items"}
+                isEdit={isEdit}
+                pinnedItems={pinnedItems}
+              />
+            </div>
 
-          {/* Total Component */}
-          <div className="col-12 md:col-4">
-            <TotalComponent
-              TotalComp={"Workforce Summary"}
-              isEdit={isEdit}
-              total={250}
-            />
+            {/* Total Component */}
+            <div className="col-12 md:col-4">
+              <TotalComponent
+                TotalComp={"Workforce Summary"}
+                isEdit={isEdit}
+                total={250}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Charts Section with integrated ChartPopup */}
-      <div>
-        <div className="mb-3">
-          <ChartPopup isEdit={isEdit} setIsEdit={setIsEdit} />
-        </div>
-        {showCard && <PopupCard />}
-        <div className="grid">
-          {/* Line Chart */}
+        {/* Charts Section with integrated ChartPopup */}
+        <div>
+          <div className="mb-3">
+            <ChartPopup isEdit={isEdit} setIsEdit={setIsEdit} />
+          </div>
+          {showCard && <PopupCard />}
+          <div className="grid">
+            {/* Line Chart */}
 
-          {/* <div className="col-12 md:col-8 mb-3 relative">
+            {/* <div className="col-12 md:col-8 mb-3 relative">
             <LineChart name={"Sales Orders"} isEdit={isEdit} />
           </div> */}
 
-          {/* Bar Chart */}
-          {/* <div className="col-12 md:col-4 mb-3">
+            {/* Bar Chart */}
+            {/* <div className="col-12 md:col-4 mb-3">
             <BarChart total={"Total Users"} isEdit={isEdit} />
           </div> */}
-          <div className="col-12 md:col-8 mb-3 relative">
-            <MultipleChart />
+            <div className="col-12 md:col-8 mb-3 relative">
+              <MultipleChart />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Team Members Section */}
-      <div>
-        <TeamMembers
-          teamMembers={teamMembers}
-          tabs={tabs}
-          ActiveTab={ActiveTab}
-          setActiveTab={setActiveTab}
-          isEdit={isEdit}
-        />
+        {/* Team Members Section */}
+        <div>
+          <TeamMembers
+            teamMembers={teamMembers}
+            tabs={tabs}
+            ActiveTab={ActiveTab}
+            setActiveTab={setActiveTab}
+            isEdit={isEdit}
+          />
+        </div>
       </div>
-    </div>
     </ProjectLayout>
   );
 };

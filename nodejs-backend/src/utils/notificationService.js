@@ -22,8 +22,12 @@ module.exports = {
 function createNotification(context, action, result = null) {
   const { app, method, params, data } = context;
 
-  if (context.path === "notifications" || context.path === "authentication"|| context.path === "audits"||
-    context.path === "loginHistory" ) {
+  if (
+    context.path === "notifications" ||
+    context.path === "authentication" ||
+    context.path === "audits" ||
+    context.path === "loginHistory"
+  ) {
     return context;
   }
 

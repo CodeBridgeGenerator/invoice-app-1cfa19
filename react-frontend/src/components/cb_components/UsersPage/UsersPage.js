@@ -350,7 +350,7 @@ const UsersPage = (props) => {
         </div>
         <div className="col-6 flex justify-content-end">
           <>
-          {" "}
+            {" "}
             <SplitButton
               model={filterMenuItems.filter(
                 (m) => !(m.icon === "pi pi-trash" && data?.length === 0),

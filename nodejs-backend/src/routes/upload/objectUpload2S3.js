@@ -1,5 +1,5 @@
-const s3Client = require('./s3Client');
-const { PutObjectCommand } = require('@aws-sdk/client-s3');
+const s3Client = require("./s3Client");
+const { PutObjectCommand } = require("@aws-sdk/client-s3");
 const URL = process.env.S3_URL;
 const FOLDER = process.env.PROJECT_NAME;
 const BUCKET = process.env.S3_BUCKET;
@@ -15,7 +15,7 @@ async function objectUpload2S3(request, response) {
     type,
     tableId,
     tableName,
-    user
+    user,
   } = request.body;
 
   if (content) {
@@ -24,12 +24,12 @@ async function objectUpload2S3(request, response) {
         Bucket: BUCKET,
         Key: `${FOLDER}/${name}`,
         Body: content,
-        ContentType: type
+        ContentType: type,
       };
 
       const response = await s3Client.send(new PutObjectCommand(params));
 
-      if (typeof response.VersionId === 'string') {
+      if (typeof response.VersionId === "string") {
         const url = `${URL}/${name}`;
         const data = {
           lastModified,
@@ -44,24 +44,20 @@ async function objectUpload2S3(request, response) {
           tableId,
           tableName,
           createdBy: user._id,
-          updatedBy: user._id
+          updatedBy: user._id,
         };
         request.app.services.documentStorages.create(data);
         // console.log("File uploaded successfully:");
         // console.log("_data:", _data);
-        message = 'Success, object deleted';
-        return response
-          .status(200)
-          .json({ status: true, url, message });
+        message = "Success, object deleted";
+        return response.status(200).json({ status: true, url, message });
       } else {
-        message = 'Error uploading file:';
+        message = "Error uploading file:";
         console.error(message);
-        return response
-          .status(200)
-          .json({ status: false, message });
+        return response.status(200).json({ status: false, message });
       }
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error("Error uploading file:", error);
       return response.status(501).json({ status: false, ...error });
     }
   }

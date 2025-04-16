@@ -74,7 +74,7 @@ const TemplatesPage = (props) => {
       .service("templates")
       .find({
         query: {
-          $limit: 10000
+          $limit: 10000,
         },
       })
       .then((res) => {
