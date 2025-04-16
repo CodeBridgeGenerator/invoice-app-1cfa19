@@ -187,6 +187,20 @@ const InvoicesCreateDialogComponent = (props) => {
     }));
   }, [_entity?.quantity, itemPrice]);
 
+  useEffect(() => {
+    // calculate total
+    const subTotal = _entity?.subTotal || 0;
+    const discountPercent = _entity?.discount || 0;
+
+    const discountAmount = (subTotal * discountPercent) / 100;
+    const total = subTotal - discountAmount;
+
+    set_entity((prev) => ({
+      ...prev,
+      total,
+    }));
+  }, [_entity?.subTotal, _entity?.discount]);
+
   const renderFooter = () => (
     <div className="flex justify-content-end">
       <Button
@@ -344,7 +358,15 @@ const InvoicesCreateDialogComponent = (props) => {
               id="discount"
               className="w-full mb-3 p-inputtext-sm"
               value={_entity?.discount}
-              onChange={(e) => setValByKey("discount", e.value)}
+              onValueChange={(e) => {
+                const raw = e.value || 0;
+                const clamped = Math.min(100, Math.max(0, raw)); // clamp between 0–100
+                setValByKey("discount", clamped);
+              }}
+              mode="decimal"
+              suffix="%"
+              min={0}
+              max={100}
             />
           </span>
           <small className="p-error">
@@ -365,7 +387,7 @@ const InvoicesCreateDialogComponent = (props) => {
               currency="MYR"
               locale="en-US"
               value={_entity?.total}
-              onValueChange={(e) => setValByKey("total", e.value)}
+              disabled
             />
           </span>
           <small className="p-error">
