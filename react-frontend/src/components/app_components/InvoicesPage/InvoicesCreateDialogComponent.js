@@ -35,6 +35,7 @@ const InvoicesCreateDialogComponent = (props) => {
   const [companyId, setCompanyId] = useState([]);
   const [itemId, setItemId] = useState([]);
   const [availableItemQuantity, setAvailableItemQuantity] = useState(null);
+  const [itemPrice, setItemPrice] = useState(0);
 
   useEffect(() => {
     let init = {};
@@ -175,6 +176,17 @@ const InvoicesCreateDialogComponent = (props) => {
       });
   }, []);
 
+  useEffect(() => {
+    // calculate subtotal
+    const quantity = _entity?.quantity || 0;
+    const subTotal = quantity * itemPrice;
+
+    set_entity((prev) => ({
+      ...prev,
+      subTotal,
+    }));
+  }, [_entity?.quantity, itemPrice]);
+
   const renderFooter = () => (
     <div className="flex justify-content-end">
       <Button
@@ -261,6 +273,7 @@ const InvoicesCreateDialogComponent = (props) => {
                     .service("items")
                     .get(selectedItem);
                   setAvailableItemQuantity(itemData.quantity); // assuming the item has a 'quantity' field
+                  setItemPrice(itemData.price || 0); // Assuming your item has a 'price' field
                 } catch (err) {
                   console.log(err);
                   props.alert({
@@ -313,7 +326,7 @@ const InvoicesCreateDialogComponent = (props) => {
               currency="MYR"
               locale="en-US"
               value={_entity?.subTotal}
-              onValueChange={(e) => setValByKey("subTotal", e.value)}
+              disabled
             />
           </span>
           <small className="p-error">
