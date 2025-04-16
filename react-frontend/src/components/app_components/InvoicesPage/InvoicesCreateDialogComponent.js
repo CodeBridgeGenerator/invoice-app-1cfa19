@@ -34,6 +34,7 @@ const InvoicesCreateDialogComponent = (props) => {
   const urlParams = useParams();
   const [companyId, setCompanyId] = useState([]);
   const [itemId, setItemId] = useState([]);
+  const [availableItemQuantity, setAvailableItemQuantity] = useState(null);
 
   useEffect(() => {
     let init = {};
@@ -49,11 +50,19 @@ const InvoicesCreateDialogComponent = (props) => {
   }, [props.show]);
 
   const validate = () => {
-    let ret = true;
     const error = {};
+    const qty = _entity?.quantity || 0;
 
-    if (!ret) setError(error);
-    return ret;
+    if (!_entity?.companyId?._id) error.companyId = "Company is required";
+    if (!_entity?.itemId?._id) error.itemId = "Item is required";
+    if (!qty || qty <= 0) error.quantity = "Quantity must be greater than 0";
+
+    if (availableItemQuantity !== null && qty > availableItemQuantity) {
+      error.quantity = `Cannot invoice more than available (${availableItemQuantity})`;
+    }
+
+    setError(error);
+    return Object.keys(error).length === 0;
   };
 
   const onSave = async () => {
@@ -243,7 +252,24 @@ const InvoicesCreateDialogComponent = (props) => {
               optionLabel="name"
               optionValue="value"
               options={itemIdOptions}
-              onChange={(e) => setValByKey("itemId", { _id: e.value })}
+              onChange={async (e) => {
+                const selectedItem = e.value;
+                setValByKey("itemId", { _id: selectedItem });
+
+                try {
+                  const itemData = await client
+                    .service("items")
+                    .get(selectedItem);
+                  setAvailableItemQuantity(itemData.quantity); // assuming the item has a 'quantity' field
+                } catch (err) {
+                  console.log(err);
+                  props.alert({
+                    type: "error",
+                    title: "Item Load",
+                    message: "Failed to fetch item details",
+                  });
+                }
+              }}
             />
           </span>
           <small className="p-error">
@@ -264,6 +290,11 @@ const InvoicesCreateDialogComponent = (props) => {
               onChange={(e) => setValByKey("quantity", e.value)}
             />
           </span>
+          {availableItemQuantity !== null && (
+            <small className="text-xs text-gray-600">
+              Available: {availableItemQuantity}
+            </small>
+          )}
           <small className="p-error">
             {!_.isEmpty(error["quantity"]) ? (
               <p className="m-0" key="error-quantity">
