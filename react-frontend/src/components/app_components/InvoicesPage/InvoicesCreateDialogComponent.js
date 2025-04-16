@@ -83,6 +83,20 @@ const InvoicesCreateDialogComponent = (props) => {
 
     try {
       const result = await client.service("invoices").create(_data);
+
+      // Get current item data
+      const item = await client.service("items").get(_data.itemId);
+
+      const newQuantity = (item.quantity || 0) - (_data.quantity || 0);
+      if (newQuantity < 0) {
+        throw new Error("Insufficient stock to complete this invoice.");
+      }
+
+      // Update the item's quantity
+      await client.service("items").patch(_data.itemId, {
+        quantity: newQuantity,
+      });
+
       const eagerResult = await client.service("invoices").find({
         query: {
           $limit: 10000,
@@ -101,11 +115,12 @@ const InvoicesCreateDialogComponent = (props) => {
           ],
         },
       });
+
       props.onHide();
       props.alert({
         type: "success",
         title: "Create info",
-        message: "Info Invoices updated successfully",
+        message: "Invoice created and item quantity updated.",
       });
       props.onCreateResult(eagerResult.data[0]);
     } catch (error) {
@@ -114,7 +129,7 @@ const InvoicesCreateDialogComponent = (props) => {
       props.alert({
         type: "error",
         title: "Create",
-        message: "Failed to create in Invoices",
+        message: error.message || "Failed to create invoice",
       });
     }
     setLoading(false);
