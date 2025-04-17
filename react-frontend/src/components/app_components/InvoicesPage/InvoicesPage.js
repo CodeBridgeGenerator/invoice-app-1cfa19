@@ -153,8 +153,23 @@ const InvoicesPage = (props) => {
 
   const deleteRow = async () => {
     try {
+      // 1. Get the invoice
+      const invoice = await client.service("invoices").get(selectedEntityIndex);
+
+      // 2. Get the related item
+      const item = await client.service("items").get(invoice.itemId);
+
+      // 3. Revert item stock
+      const newStock = item.quantity + invoice.quantity;
+      await client.service("items").patch(invoice.itemId, {
+        quantity: newStock,
+      });
+
+      // 4. Delete the invoice
       await client.service("invoices").remove(selectedEntityIndex);
-      let _newData = data.filter((data) => data._id !== selectedEntityIndex);
+
+      // 5. Update local state
+      let _newData = data.filter((d) => d._id !== selectedEntityIndex);
       setData(_newData);
       setSelectedEntityIndex();
       setShowAreYouSureDialog(false);
@@ -163,7 +178,7 @@ const InvoicesPage = (props) => {
       props.alert({
         title: "Invoices",
         type: "error",
-        message: error.message || "Failed delete record",
+        message: error.message || "Failed to delete invoice and update stock",
       });
     }
   };
