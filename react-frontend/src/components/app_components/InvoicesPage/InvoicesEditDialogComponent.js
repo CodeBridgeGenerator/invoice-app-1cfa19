@@ -31,9 +31,27 @@ const InvoicesCreateDialogComponent = (props) => {
   const urlParams = useParams();
   const [companyId, setCompanyId] = useState([]);
   const [itemId, setItemId] = useState([]);
+  const [availableItemQuantity, setAvailableItemQuantity] = useState(null);
+  const [itemPrice, setItemPrice] = useState(0);
+  const [originalQuantity, setOriginalQuantity] = useState(0);
+
+  const validate = () => {
+    const error = {};
+    const qty = _entity?.quantity || 0;
+
+    if (!qty || qty <= 0) error.quantity = "Quantity must be greater than 0";
+
+    if (availableItemQuantity !== null && qty > availableItemQuantity) {
+      error.quantity = `Cannot invoice more than available (${availableItemQuantity})`;
+    }
+
+    setError(error);
+    return Object.keys(error).length === 0;
+  };
 
   useEffect(() => {
     set_entity(props.entity);
+    setOriginalQuantity(props.entity?.quantity || 0); // Save original invoice quantity
   }, [props.entity, props.show]);
 
   useEffect(() => {
@@ -91,19 +109,103 @@ const InvoicesCreateDialogComponent = (props) => {
       });
   }, []);
 
-  const onSave = async () => {
-    let _data = {
-      companyId: _entity?.companyId?._id,
-      itemId: _entity?.itemId?._id,
-      quantity: _entity?.quantity,
-      subTotal: _entity?.subTotal,
-      discount: _entity?.discount,
-      total: _entity?.total,
+  useEffect(() => {
+    // calculate subtotal
+    const quantity = _entity?.quantity || 0;
+    const subTotal = quantity * itemPrice;
+
+    set_entity((prev) => ({
+      ...prev,
+      subTotal,
+    }));
+  }, [_entity?.quantity, itemPrice]);
+
+  useEffect(() => {
+    // calculate total
+    const subTotal = _entity?.subTotal || 0;
+    const discountPercent = _entity?.discount || 0;
+
+    const discountAmount = (subTotal * discountPercent) / 100;
+    const total = subTotal - discountAmount;
+
+    set_entity((prev) => ({
+      ...prev,
+      total,
+    }));
+  }, [_entity?.subTotal, _entity?.discount]);
+
+  useEffect(() => {
+    const loadInitialItem = async () => {
+      const itemId = props.entity?.itemId?._id;
+      const quantity = props.entity?.quantity || 0;
+      if (itemId) {
+        try {
+          const itemData = await client.service("items").get(itemId);
+
+          // Adjust quantity like before
+          const adjustedQuantity = itemData.quantity + quantity;
+          setAvailableItemQuantity(adjustedQuantity);
+          setItemPrice(itemData.price || 0);
+        } catch (err) {
+          console.log(err);
+          props.alert({
+            type: "error",
+            title: "Initial Item Load",
+            message: "Failed to fetch item details",
+          });
+        }
+      }
     };
 
+    loadInitialItem();
+  }, [props.entity]);
+
+  const onSave = async () => {
+    if (!validate()) return;
     setLoading(true);
+
     try {
-      await client.service("invoices").patch(_entity._id, _data);
+      const updatedQuantity = _entity?.quantity;
+      const newItemId = _entity?.itemId?._id;
+
+      // Get the original invoice before update
+      const originalInvoice = await client.service("invoices").get(_entity._id);
+      const originalItemId = originalInvoice.itemId;
+      const originalQuantity = originalInvoice.quantity;
+
+      // Patch the invoice itself
+      await client.service("invoices").patch(_entity._id, {
+        companyId: _entity?.companyId?._id,
+        itemId: newItemId,
+        quantity: updatedQuantity,
+        subTotal: _entity?.subTotal,
+        discount: _entity?.discount,
+        total: _entity?.total,
+      });
+
+      // Update stock quantities
+      if (originalItemId !== newItemId) {
+        // 1. Revert stock for the original item
+        const oldItem = await client.service("items").get(originalItemId);
+        await client.service("items").patch(originalItemId, {
+          quantity: oldItem.quantity + originalQuantity,
+        });
+
+        // 2. Deduct stock for the new item
+        const newItem = await client.service("items").get(newItemId);
+        await client.service("items").patch(newItemId, {
+          quantity: newItem.quantity - updatedQuantity,
+        });
+      } else {
+        // Same item, adjust based on quantity difference
+        const diff = updatedQuantity - originalQuantity;
+        const item = await client.service("items").get(newItemId);
+        await client.service("items").patch(newItemId, {
+          quantity: item.quantity - diff,
+        });
+      }
+
+      // Refresh the invoice with populated data
       const eagerResult = await client.service("invoices").find({
         query: {
           $limit: 10000,
@@ -122,6 +224,7 @@ const InvoicesCreateDialogComponent = (props) => {
           ],
         },
       });
+
       props.onHide();
       props.alert({
         type: "success",
@@ -130,7 +233,7 @@ const InvoicesCreateDialogComponent = (props) => {
       });
       props.onEditResult(eagerResult.data[0]);
     } catch (error) {
-      console.log("error", error);
+      console.error("Save failed", error);
       setError(
         getSchemaValidationErrorsStrings(error) || "Failed to update info",
       );
@@ -140,6 +243,7 @@ const InvoicesCreateDialogComponent = (props) => {
         message: "Failed to update info",
       });
     }
+
     setLoading(false);
   };
 
@@ -220,7 +324,35 @@ const InvoicesCreateDialogComponent = (props) => {
               optionLabel="name"
               optionValue="value"
               options={itemIdOptions}
-              onChange={(e) => setValByKey("itemId", { _id: e.value })}
+              onChange={async (e) => {
+                const selectedItem = e.value;
+                setValByKey("itemId", { _id: selectedItem });
+
+                try {
+                  const itemData = await client
+                    .service("items")
+                    .get(selectedItem);
+
+                  // Check if the selected item is the same as the one originally invoiced
+                  const isOriginalItem =
+                    selectedItem === props.entity?.itemId?._id;
+
+                  // Add back original quantity ONLY if it's the same item
+                  const adjustedQuantity = isOriginalItem
+                    ? itemData.quantity + originalQuantity
+                    : itemData.quantity;
+
+                  setAvailableItemQuantity(adjustedQuantity);
+                  setItemPrice(itemData.price || 0);
+                } catch (err) {
+                  console.log(err);
+                  props.alert({
+                    type: "error",
+                    title: "Item Load",
+                    message: "Failed to fetch item details",
+                  });
+                }
+              }}
             />
           </span>
           <small className="p-error">
@@ -242,6 +374,11 @@ const InvoicesCreateDialogComponent = (props) => {
               useGrouping={false}
             />
           </span>
+          {availableItemQuantity !== null && (
+            <small className="text-xs text-gray-600">
+              Available: {availableItemQuantity}
+            </small>
+          )}
           <small className="p-error">
             {!_.isEmpty(error["quantity"]) && (
               <p className="m-0" key="error-quantity">
@@ -260,7 +397,7 @@ const InvoicesCreateDialogComponent = (props) => {
               currency="MYR"
               locale="en-US"
               value={_entity?.subTotal}
-              onValueChange={(e) => setValByKey("subTotal", e.value)}
+              disabled
               useGrouping={false}
             />
           </span>
@@ -279,7 +416,15 @@ const InvoicesCreateDialogComponent = (props) => {
               id="discount"
               className="w-full mb-3 p-inputtext-sm"
               value={_entity?.discount}
-              onChange={(e) => setValByKey("discount", e.value)}
+              onValueChange={(e) => {
+                const raw = e.value || 0;
+                const clamped = Math.min(100, Math.max(0, raw)); // clamp between 0–100
+                setValByKey("discount", clamped);
+              }}
+              mode="decimal"
+              suffix="%"
+              min={0}
+              max={100}
               useGrouping={false}
             />
           </span>
@@ -301,7 +446,7 @@ const InvoicesCreateDialogComponent = (props) => {
               currency="MYR"
               locale="en-US"
               value={_entity?.total}
-              onValueChange={(e) => setValByKey("total", e.value)}
+              disabled
               useGrouping={false}
             />
           </span>
